@@ -1,0 +1,8 @@
+fastapi[standard]
+uvicorn
+Jinja2
+youtube-transcript-api
+requests
+slowapi
+pydantic
+limits
