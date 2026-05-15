@@ -159,18 +159,18 @@ img, iframe {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* CONTAINER PRINCIPAL (A barra cinza ao redor) */
+/* VISUALIZADOR DE TOKENS */
 #token-container {
-    display: flex;         /* Coloca texto e número lado a lado */
-    align-items: center;   /* Centraliza verticalmente */
-    gap: 10px;             /* Espaço entre o texto e o círculo */
+    display: flex;         
+    align-items: center;   
+    gap: 10px;             
     background-color: #f8f9fa;
     padding: 5px 15px;
-    border-radius: 50px;   /* Deixa as pontas arredondadas */
+    border-radius: 50px;   
     border: 1px solid #e0e0e0;
 }
 
-/* O TEXTO "Créditos de Vídeo" */
+/* O texto "Tokens" */
 #token-label {
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -179,21 +179,21 @@ img, iframe {
     font-family: sans-serif;
 }
 
-/* O CÍRCULO AZUL COM O NÚMERO */
+/* Círculo azul com número de tokens dentro */
 #token-count {
     background-color: #4a90e2;
     color: white;
-    width: 30px;           /* Largura fixa para ser um círculo */
-    height: 30px;          /* Altura fixa para ser um círculo */
+    width: 30px;           
+    height: 30px;          
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;    /* Torna a div redonda */
+    border-radius: 50%;    
     font-weight: bold;
     font-size: 0.9rem;
 }
 
-/* CLASSE PARA QUANDO OS TOKENS ACABAREM (Fica vermelho) */
+/* Classe para quando tokens acabarem (fica vermelho) */
 .token-low {
     background-color: #e74c3c !important;
 }
