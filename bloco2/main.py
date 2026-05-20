@@ -106,7 +106,7 @@ async def obter_legenda(request: Request, url: str):
     # Aqui vem a parte mais importante: 
     # Definir quantos tokens o usuário tem, para cada certo período de tempo.
     limite = parse("5/5 minute") # Tomei a liberdade de fornecer inicialmente 5 tokens para o usuário poder gastar.
-    # A cada 5 minutos, a quantidade de tokens do usuário(bucket) reseta para 5 novamente.
+    # A cada 5 minutos, a quantidade de tokens do usuário (bucket) reseta para 5 novamente.
     # Se achar 5 minutos demais, basta trocar o segundo 5 da linha de código acima pela quantidade de minutos que desejar =)
     ip_do_usuario = get_remote_address(request)
     cache = carregar_da_cache(video_id)
@@ -115,10 +115,33 @@ async def obter_legenda(request: Request, url: str):
         # Se o vídeo estiver na cache, não é necessário descontar um token, pois puxamos as legendas da memória:
         dados_do_usuario = limitador.limiter.get_window_stats(limite, ip_do_usuario, "obter_legenda")
         tokens_restantes = dados_do_usuario.remaining
-        # Retornamos os dados da cache, e o saldo de tokens:
+
+        # NOVO (BLOCO 3):
+
+        # Antes, a cache salvava as legendas como uma lista de frases. Agora, temos a informação sobre o tipo da legenda (manual/automática) sendo adicionada.
+        # Então, para garantir que um vídeo que esteja no formato antigo dentro cache (lista de frases) seja adaptado para o novo formato (dicionário: tipo da legenda + lista de frases), será necessário:
+        if isinstance(cache, dict):
+            # Se o que estiver dentro da cache for um dicionário, então já está no formato novo. Logo, basta extrair esse tipo:
+            era_manual = cache.get("legenda_manual", True)
+            legendas = cache.get("legendas", cache)
+        else:
+            # Se a cache for do formato antigo (lista de frases):
+            era_manual = True
+            legendas = cache
+
+        # Com a variável era_manual, é possível lançar um aviso no Back-End para informar que as legendas do vídeo estavam na Cache, e também o tipo de sua legenda:
+        if era_manual:
+            tipo_legenda = "MANUAL"
+        else:
+            tipo_legenda = "AUTOMÁTICA - Erros de transcrição são possíveis nesse caso"
+
+        print(f"Tipo de legenda: {tipo_legenda}")
+
+        # Retornamos os dados da cache, o saldo de tokens e a característica da legenda:
         return JSONResponse(content={
-            "dados": cache,
-            "tokens_restantes": tokens_restantes
+            "dados": legendas,
+            "tokens_restantes": tokens_restantes,
+            "legenda_manual": era_manual
         })
     
     # Se o usuário gastar todos os seus tokens e zerar seu saldo, um JSON avisando isso é mostrado para o usuário:
@@ -137,9 +160,33 @@ async def obter_legenda(request: Request, url: str):
     try:
         youtube_api = YouTubeTranscriptApi(http_client=session)
         lista_de_legendas = youtube_api.list(video_id)
-        legenda_manual_ingles = lista_de_legendas.find_manually_created_transcript(['en'])
-        blocos_brutos = legenda_manual_ingles.fetch()
-        
+
+        # NOVO (BLOCO 3):  
+
+        # Nessa etapa do projeto, é desejável que as legendas automáticas também sejam uma opção, além das manuais que já estão implementadas.
+        # Porém, se a legenda extraída do vídeo for automática, um aviso no Back-End deve ser lançado avisando que podem haver erros nela, diferente das manuais.
+        # Inicialização das variáveis que serão usadas:
+        legenda_objeto = None # Variável que guardará as legendas em si (sejam elas manuais ou automáticas)
+        tem_legenda_manual = True # Variável que indicará se as legendas são manuais ou automáticas. Suponhamos inicialmente que um vídeo genérico possua legendas manuais.
+
+        try:
+            # Primeiro, vou tentar extrair as legendas manuais do vídeo. Se elas existirem, essa linha será suficiente para extraí-las:
+            legenda_objeto = lista_de_legendas.find_manually_created_transcript(['en'])
+            print(f"Tipo de legenda: MANUAL")
+
+        except Exception:
+
+            try:
+                # Se falhar, isso significa que as legendas manuais não existem. Então, como segunda opção, tentarei extrair as legendas automáticas:
+                legenda_objeto = lista_de_legendas.find_generated_transcript(['en'])
+                tem_legenda_manual = False # Aviso ao sistema que essa legenda não é manual.
+                print(f"Tipo de legenda: AUTOMÁTICA - Erros de transcrição são possíveis nesse caso")
+
+            except Exception:
+                # Se falhar novamente, isso significa que não há legendas em inglês disponíveis para esse vídeo específico:
+                raise HTTPException(status_code=404, detail="O vídeo não possui nenhuma legenda em inglês disponível")
+
+        blocos_brutos = legenda_objeto.fetch()
         legendas_formatadas = []
         texto_anterior = ""
 
@@ -162,18 +209,26 @@ async def obter_legenda(request: Request, url: str):
                 texto_anterior = texto_limpo
 
         # É necessário então sobrescrever a cache com o novo vídeo:
-        salvar_na_cache(video_id, legendas_formatadas)
+        # NOVO (BLOCO 3):
+        # Agora, além de guardar as legendas_formatadas, vou guardar também a varíavel tem_legenda_manual:
+        dados_para_salvar = {
+            "legendas": legendas_formatadas,
+            "legenda_manual": tem_legenda_manual
+        }
 
-        # Depois, basta retornar as legendas, juntamente com os tokens restantes que o usuário possui:
+        salvar_na_cache(video_id, dados_para_salvar)
+
+        # Depois, basta retornar as legendas, juntamente com os tokens restantes que o usuário possui, e a característica da legenda:
         return JSONResponse(content={
             "dados": legendas_formatadas,
-            "tokens_restantes": tokens_restantes
+            "tokens_restantes": tokens_restantes,
+            "legenda_manual": tem_legenda_manual
         })
 
     except Exception as e:
         mensagem_de_erro = str(e)
         if "No transcript found" in mensagem_de_erro or "Could not find" in mensagem_de_erro:
-            raise HTTPException(status_code=404, detail="Vídeo sem legenda manual em inglês.")
+            raise HTTPException(status_code=404, detail="Vídeo sem legendas disponíveis em inglês.")
         
         print(f"Erro técnico: {e}")
         raise HTTPException(status_code=500, detail="Erro ao processar legendas.")
