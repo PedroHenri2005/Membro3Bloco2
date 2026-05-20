@@ -2,7 +2,9 @@
 # A ideia é sempre guardar as legendas do último vídeo que o usuário requeriu. 
 # Se ele pedir o mesmo vídeo novamente, basta entregar as legendas presentes na Cache.
 from pydantic import BaseModel
-from typing import List
+# NOVO (BLOCO 3):
+# Para comportar que o que seja guardado no ultimo_video.json possa ser tanto uma lista de frases (como era antigamente) quanto um dicionário (lista de frases + tipo da legenda), adicionemos:
+from typing import List, Union, Dict
 import json
 import os
 
@@ -16,19 +18,19 @@ class BlocoLegenda(BaseModel):
 # O último vídeo que o usuário carregou tem sua respectiva ID, e as legendas do vídeo propriamente ditas:
 class UltimoVideo(BaseModel):
     video_id: str
-    dados: List[BlocoLegenda]
+    dados: Union[List[BlocoLegenda], Dict]
 
 # O arquivo que guardará as legendas do último vídeo:
 ARQUIVO_CACHE = "ultimo_video.json"
 
 # Aqui, vem a função que serve para salvar as legendas de um certo vídeo na memória criada:
-def salvar_na_cache(video_id: str, legendas: list):
+def salvar_na_cache(video_id: str, dados_para_salvar: Union[list, dict]):
     """ Valida as legendas do último vídeo e salva elas, sobrescrevendo as anteriores, caso existirem. """
     try:
-        objeto_ultimo_video = UltimoVideo(video_id=video_id, dados=legendas)
+        objeto_ultimo_video = UltimoVideo(video_id=video_id, dados=dados_para_salvar)
         with open(ARQUIVO_CACHE, "w", encoding="utf-8") as f:
             f.write(objeto_ultimo_video.model_dump_json(indent=4))
-        print(f"O vídeo que possui a respectiva ID: {video_id} foi salvo na Cache.")
+        print(f"O vídeo que possui a respectiva ID: ({video_id}) foi salvo na Cache.")
     except Exception as e:
         print(f"Erro ao salvar na Cache: {e}")
 
