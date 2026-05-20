@@ -1,4 +1,4 @@
-# Aqui, vamos criar o banco de dados responsável pela memóri (Cache).
+# Aqui, vamos criar o banco de dados responsável pela memória (Cache).
 # A ideia é sempre guardar as legendas do último vídeo que o usuário requeriu. 
 # Se ele pedir o mesmo vídeo novamente, basta entregar as legendas presentes na Cache.
 from pydantic import BaseModel
