@@ -2,9 +2,7 @@
 # A ideia é sempre guardar as legendas do último vídeo que o usuário requeriu. 
 # Se ele pedir o mesmo vídeo novamente, basta entregar as legendas presentes na Cache.
 from pydantic import BaseModel
-# NOVO (BLOCO 3):
-# Para comportar que o que seja guardado no ultimo_video.json possa ser tanto uma lista de frases (como era antigamente) quanto um dicionário (lista de frases + tipo da legenda), adicionemos:
-from typing import List, Union, Dict
+from typing import List
 import json
 import os
 
@@ -15,16 +13,22 @@ class BlocoLegenda(BaseModel):
     tempo_inicio: float
     tempo_fim: float
 
+# [ MEMBRO 3 - BLOCO 3]:
+# Aqui, terá uma nova classe que servirá exclusivamente para juntar as informações: tipo de legenda (manual/automática) + blocos de legenda.
+class LegendasCompletas(BaseModel):
+    legenda_manual: bool
+    legendas: List[BlocoLegenda]
+    
 # O último vídeo que o usuário carregou tem sua respectiva ID, e as legendas do vídeo propriamente ditas:
 class UltimoVideo(BaseModel):
     video_id: str
-    dados: Union[List[BlocoLegenda], Dict]
+    dados: LegendasCompletas
 
 # O arquivo que guardará as legendas do último vídeo:
 ARQUIVO_CACHE = "ultimo_video.json"
 
 # Aqui, vem a função que serve para salvar as legendas de um certo vídeo na memória criada:
-def salvar_na_cache(video_id: str, dados_para_salvar: Union[list, dict]):
+def salvar_na_cache(video_id: str, dados_para_salvar: dict): # Adapatando os dados para um dicionário ao invés de lista
     """ Valida as legendas do último vídeo e salva elas, sobrescrevendo as anteriores, caso existirem. """
     try:
         objeto_ultimo_video = UltimoVideo(video_id=video_id, dados=dados_para_salvar)
