@@ -116,19 +116,13 @@ async def obter_legenda(request: Request, url: str):
         dados_do_usuario = limitador.limiter.get_window_stats(limite, ip_do_usuario, "obter_legenda")
         tokens_restantes = dados_do_usuario.remaining
 
-        # NOVO (BLOCO 3):
+        # [ MEMBRO 3 - BLOCO 3 ]:
 
         # Antes, a cache salvava as legendas como uma lista de frases. Agora, temos a informação sobre o tipo da legenda (manual/automática) sendo adicionada.
         # Então, para garantir que um vídeo que esteja no formato antigo dentro cache (lista de frases) seja adaptado para o novo formato (dicionário: tipo da legenda + lista de frases), será necessário:
-        if isinstance(cache, dict):
-            # Se o que estiver dentro da cache for um dicionário, então já está no formato novo. Logo, basta extrair esse tipo:
-            era_manual = cache.get("legenda_manual", True)
-            legendas = cache.get("legendas", cache)
-        else:
-            # Se a cache for do formato antigo (lista de frases):
-            era_manual = True
-            legendas = cache
-
+        # Como o que está dentro da cache agora será um dicionário, basta extrair esse tipo, juntamente com as legendas:
+        era_manual = cache.get("legenda_manual", True)
+        legendas = cache.get("legendas", [])
         # Com a variável era_manual, é possível lançar um aviso no Back-End para informar que as legendas do vídeo estavam na Cache, e também o tipo de sua legenda:
         if era_manual:
             tipo_legenda = "MANUAL"
@@ -161,7 +155,7 @@ async def obter_legenda(request: Request, url: str):
         youtube_api = YouTubeTranscriptApi(http_client=session)
         lista_de_legendas = youtube_api.list(video_id)
 
-        # NOVO (BLOCO 3):  
+        # [ MEMBRO 3 - BLOCO 3 ]:
 
         # Nessa etapa do projeto, é desejável que as legendas automáticas também sejam uma opção, além das manuais que já estão implementadas.
         # Porém, se a legenda extraída do vídeo for automática, um aviso no Back-End deve ser lançado avisando que podem haver erros nela, diferente das manuais.
@@ -209,7 +203,6 @@ async def obter_legenda(request: Request, url: str):
                 texto_anterior = texto_limpo
 
         # É necessário então sobrescrever a cache com o novo vídeo:
-        # NOVO (BLOCO 3):
         # Agora, além de guardar as legendas_formatadas, vou guardar também a varíavel tem_legenda_manual:
         dados_para_salvar = {
             "legendas": legendas_formatadas,
@@ -227,8 +220,8 @@ async def obter_legenda(request: Request, url: str):
 
     except Exception as e:
         mensagem_de_erro = str(e)
-        if "No transcript found" in mensagem_de_erro or "Could not find" in mensagem_de_erro:
-            raise HTTPException(status_code=404, detail="Vídeo sem legendas disponíveis em inglês.")
+        if "Could not retrieve a transcript" in mensagem_de_erro:
+            raise HTTPException(status_code=404, detail="Vídeo sem legendas disponíveis em inglês.") # Mensagem de erro adaptada, pois agora o projeto aceita legendas automáticas também.
         
         print(f"Erro técnico: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao processar legendas.")
+        raise HTTPException(status_code=500, detail="Erro ao processar legendas.") 
