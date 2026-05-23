@@ -1,3 +1,5 @@
+# [ MEMBRO 3 - BLOCO 3]
+# Aqui é onde ficarão as classes que serão usadas para salvar os Flashcards de revisão, e organizá-los em Decks.
 from datetime import datetime, timezone
 from typing import List, Optional
 from sqlmodel import Field, Relationship, SQLModel
