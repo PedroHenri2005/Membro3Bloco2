@@ -13,13 +13,38 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from limits import parse
 # Para a funcionalidade da Cache, precisaremos de:
-from cache import salvar_na_cache, carregar_da_cache
+from cache import salvar_na_cache, carregar_da_cache  # [ MEMBRO 3 - BLOCO 3]: mudei o nome do antigo database.py para cache.py. Agora, existe um novo database.py, que tem uma função difernte.
+# Para configurar o banco de dados e a Engine, será necessário:
+from contextlib import asynccontextmanager
+from sqlmodel import SQLModel, create_engine
+import models
 
+# Configuração do Banco de Dados SQLite
+arquivo_sqlite = "estudos.db"
+url_sqlite = f"sqlite:///{arquivo_sqlite}"
 
+# Criação da Engine do BD:
+engine = create_engine(url_sqlite)
+
+def criar_db_e_tabelas():
+    """Cria o arquivo estudos.db e as tabelas caso não existam."""
+    SQLModel.metadata.create_all(engine)
+    print("Tabelas do Banco de Dados checadas/criadas com sucesso!")
+
+@asynccontextmanager
+async def initFunction(app: FastAPI):
+    # Executado exatamente no momento em que o servidor liga:
+    criar_db_e_tabelas()
+    yield
+    # Executado no momento em que o servidor desliga:
+    print("Servidor finalizado adequadamente.")
+    
 # Começamos definindo o limitador:
 # Ele servirá para restringir a quantidade de requisições que o usuário poderá fazer ao Youtube
 limitador = Limiter(key_func=get_remote_address) # limitador por IP
-app = FastAPI()
+
+# AJUSTE: Colocando o lifespan junto com o limitador:
+app = FastAPI(lifespan=initFunction)
 app.state.limiter = limitador
 
 app.add_middleware(
