@@ -13,7 +13,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from limits import parse
 # Para a funcionalidade da Cache, precisaremos de:
-from database import salvar_na_cache, carregar_da_cache
+from cache import salvar_na_cache, carregar_da_cache
 
 
 # Começamos definindo o limitador:
