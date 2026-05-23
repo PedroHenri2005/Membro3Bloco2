@@ -21,4 +21,4 @@ class Card(SQLModel, table=True):
     data_proxima_revisao: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     video_id: str = Field(foreign_key="deckvideo.video_id", index=True)
-    video: Optional[DeckVideo] = Relationship(back_populates="cards")
+    deck_video: Optional[DeckVideo] = Relationship(back_populates="cards")
