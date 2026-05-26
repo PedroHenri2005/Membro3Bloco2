@@ -107,6 +107,39 @@ document.addEventListener('click', function(event) {
         document.getElementById('erroModal').style.display = "none";
     }
 
+    if (event.target.id === 'estudardepois') {
+        // Se não houver frases carregadas, não é necessário fazer nada:
+        if (!blocosDeEstudo || blocosDeEstudo.length === 0) return;
+
+        // Precisamos então pegar os dados do bloco de legenda que está aparecendo na tela:
+        const blocoAtual = blocosDeEstudo[blocoAtualIndex];
+
+        // Monta os dados simulando um formulário (Form(...)) que o FastAPI espera
+        const dadosFormulario = new URLSearchParams();
+        dadosFormulario.append('video_id', currentVideoId);
+        dadosFormulario.append('titulo_video', "Deck de Estudos"); 
+        dadosFormulario.append('texto_legenda', blocoAtual.texto_limpo);
+        dadosFormulario.append('start_time', blocoAtual.tempo_inicio);
+        dadosFormulario.append('end_time', blocoAtual.tempo_fim);
+
+        // Enviando para o Back-End em segundo plano (nada muda na tela):
+        fetch('/salvar_card', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: dadosFormulario
+        })
+        .then(resposta => resposta.json())
+        .then(dados => {
+            // Imprime o resultado silenciosamente apenas no console para acompanhar
+            console.log("Resposta do servidor:", dados.mensagem);
+        })
+        .catch(erro => {
+            console.error("Erro ao salvar o card de forma silenciosa:", erro);
+        });
+    }
+
     // [MANTIDO]: Navegação entre frases.
     if (event.target.id === 'protecaoButton') {
         document.getElementById('protecaoPlayer').style.display = "none";
