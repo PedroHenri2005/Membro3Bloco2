@@ -17,7 +17,7 @@ from cache import salvar_na_cache, carregar_da_cache  # [ MEMBRO 3 - BLOCO 3]: m
 # Para configurar o banco de dados e a Engine, será necessário:
 from contextlib import asynccontextmanager
 from sqlmodel import SQLModel, create_engine
-import models
+from models import DeckVideo, Card
 
 # Configuração do Banco de Dados SQLite
 arquivo_sqlite = "estudos.db"
@@ -29,7 +29,7 @@ engine = create_engine(url_sqlite)
 def criar_db_e_tabelas():
     """Cria o arquivo estudos.db e as tabelas caso não existam."""
     SQLModel.metadata.create_all(engine)
-    print("Tabelas do Banco de Dados checadas/criadas com sucesso!")
+    print("O Banco de Dados contendo os modelos de Decks e Cards foi criado e está pronto para ser povoado.")
 
 @asynccontextmanager
 async def initFunction(app: FastAPI):
@@ -250,3 +250,62 @@ async def obter_legenda(request: Request, url: str):
         
         print(f"Erro técnico: {e}")
         raise HTTPException(status_code=500, detail="Erro ao processar legendas.") 
+
+# [ MEMBRO 3 - BLOCO 3 ]: ROTAS PARA MANUTENÇÃO DOS CARDS E DECKS
+
+# ROTA 1: Recebe os dados do bloco de legenda que o usuário desejou salvar através do clique no botão "Salvar Card", e salva ele no Banco de Dados. 
+
+@app.post("/salvar_card")
+# Aqui há a assinatura da função. Passamos todos os dados do bloco de legenda necessários para a criação do Card:
+def salvar_card_bd(
+    request: Request,
+    video_id: str = Form(...), # Cada Deck terá o mesmo ID do vídeo que ele representa, aproveitando que o ID do Youtube já é único mesmo.            
+    titulo_video: str = Form(...), # O título do Deck será o próprio título do vídeo do Youtube que ele representa.   
+    texto_legenda: str = Form(...), # O conteúdo do Card propriamente dito, ou seja, um pedaço da legenda do vídeo.
+    start_time: float = Form(...), # O tempo de ínicio desse bloco de legenda que será salvo.
+    end_time: float = Form(...) # Analogamente, o tempo de fim.
+):
+    with Session(engine) as session:
+        
+        # Antes de lidar com o Card do bloco da legenda de um vídeo, primeiro precisamos saber se já existe um Deck (conjunto de Cards) associado a aquele vídeo:
+        deck = session.get(DeckVideo, video_id)
+        
+        # Se não existir um Deck associado ao vídeo em questão, criamos ele usando as informações do ID e do título do vídeo:
+        if not deck:
+            deck = DeckVideo(video_id=video_id, titulo=titulo_video)
+            session.add(deck)
+            session.commit()
+            session.refresh(deck)
+            print(f"Novo Deck criado para o vídeo com o seguinte título: {titulo_video}")
+
+        # Além disso, existe o risco do usuário clicar múltiplas vezes no botão "Salvar Card", para o mesmo pedaço de legenda. 
+        # Seria bom se o sistema evitasse criar múltiplos Cards idênticos nessa situação. Para evitar isso:
+        query_duplicado = select(Card).where(
+            Card.video_id == video_id, 
+            Card.texto_legenda == texto_legenda
+        )
+        card_existente = session.exec(query_duplicado).first()
+        
+        # Então, se acharmos um Card igual ao que o usuário tentou salvar:
+        if card_existente:
+            print(f"Você já salvou um Card com essa frase: {texto_legenda}")
+            return JSONResponse(
+                status_code=200, 
+                content={"status": "duplicado", "mensagem": "Este card já foi salvo anteriormente."}
+            )
+ 
+        # A essa altura, o Deck do vídeo em questão com certeza existe. Logo, podemos salvar o Card, que será associado ao Deck pela propriedade video_id:
+        novo_card = Card(
+            texto_legenda=texto_legenda,
+            start_time=start_time,
+            end_time=end_time,
+            video_id=video_id 
+        )
+        session.add(novo_card)
+        session.commit()
+        print(f"Novo Card salvo: {texto_legenda}")
+        
+        return JSONResponse(
+            status_code=200, 
+            content={"status": "sucesso", "mensagem": "Card salvo com sucesso!"}
+        )
