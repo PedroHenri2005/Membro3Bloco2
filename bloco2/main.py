@@ -59,7 +59,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory=["templates", "templates/Partials"])
 
 # para evitar bloqueios cookie do Youtube
-session = RequestsSession()
+http_session = RequestsSession()
 
 # ROTAS E NAVEGAÇÃO
 
@@ -149,19 +149,53 @@ async def obter_legenda(request: Request, url: str):
         # Como o que está dentro da cache agora será um dicionário, basta extrair esse tipo, juntamente com as legendas:
         era_manual = cache.get("legenda_manual", True)
         legendas = cache.get("legendas", [])
+
+        # [ MEMBRO 3 - BLOCO 3]: 
+        # Adicionemos uma nova funcionalidade: Extrair o título do vídeo do Youtube que o usuário está estudando.
+        # Assumindo que existe o título do vídeo no dicionário armazenado dentro da Cache, podemos tentar extrair ele:
+        titulo_salvo = cache.get("titulo_video")
+
+        # Quando clicamos no botão para usar esse método GET, é desejável que ele seja utilizado apenas uma vez. Mas não é isso que acontece na prática.
+        # Como é possível ver no terminal quando esse código roda, o HTMX acaba fazendo requisições extras, mesmo apertando o botão uma única vez.
+        # Isso pode criar um cenário de duas requisições praticamente simultâneas (condição de corrida). 
+        # Dessa forma, o título pode acabar sendo lido de forma errônea.
+        # Se não houver título salvo dentro da Cache, ou se esse título dummy estiver lá:
+        if not titulo_salvo or titulo_salvo == "Vídeo do YouTube":
+            try:
+                # É possível extrair a URL limpa do vídeo (limpa no sentido de não ter marcações de tempo ou algo assim):
+                url_limpa_youtube = f"https://www.youtube.com/watch?v={video_id}"
+                # E então, podemos usar a URL oEmbed para tentar extrair o título. Essa URL é um formato que o Youtube disponibiliza para ter acesso aos metadados do vídeo.
+                # No nosso caso, a informação de interesse é o título, e queremos que isso venha no formato JSON:
+                url_oembed = f"https://www.youtube.com/oembed?url={url_limpa_youtube}&format=json"
+                # E então, a requisição do Youtube para extrair os metadados:
+                resposta_oembed = http_session.get(url_oembed)
+
+                if resposta_oembed.status_code == 200:
+                    # Aqui, se tudo der certo, podemos extrair pegar o JSON que o Youtube forneceu como resposta e procurar o atributo "title", e depois guardar na Cache:
+                    titulo_salvo = resposta_oembed.json().get("title", "Vídeo do YouTube")
+                    cache["titulo_video"] = titulo_salvo
+                    salvar_na_cache(video_id, cache)
+
+                else:
+                    titulo_salvo = "Vídeo do YouTube"
+
+            except Exception:
+                titulo_salvo = "Vídeo do YouTube"
+
         # Com a variável era_manual, é possível lançar um aviso no Back-End para informar que as legendas do vídeo estavam na Cache, e também o tipo de sua legenda:
         if era_manual:
             tipo_legenda = "MANUAL"
         else:
             tipo_legenda = "AUTOMÁTICA - Erros de transcrição são possíveis nesse caso"
 
-        print(f"Tipo de legenda: {tipo_legenda}")
+        print(f"Tipo de legenda (Cache): {tipo_legenda} | Título: {titulo_salvo}")
 
-        # Retornamos os dados da cache, o saldo de tokens e a característica da legenda:
+        # Retornamos os dados da cache, o saldo de tokens, a característica da legenda e o título:
         return JSONResponse(content={
             "dados": legendas,
             "tokens_restantes": tokens_restantes,
-            "legenda_manual": era_manual
+            "legenda_manual": era_manual,
+            "titulo_video": titulo_salvo
         })
     
     # Se o usuário gastar todos os seus tokens e zerar seu saldo, um JSON avisando isso é mostrado para o usuário:
@@ -178,8 +212,24 @@ async def obter_legenda(request: Request, url: str):
     # Se o código chegar nas próximas linhas, é porque o vídeo é novo. Logo, 1 token deve ser cobrado do usuário.
     # Como a ID do vídeo não está na memória e usuário ainda tem tokens para gastar nesse ponto do código, aí sim uma requisição ao Youtube deve ser feita:
     try:
-        youtube_api = YouTubeTranscriptApi(http_client=session)
+        youtube_api = YouTubeTranscriptApi(http_client=http_session)
         lista_de_legendas = youtube_api.list(video_id)
+        # [ MEMBRO 3 - BLOCO 3 ]: Se o vídeo não estiver na Cache, começamos definindo o título dummy "Vídeo do Youtube":
+        titulo_video = "Vídeo do YouTube"
+
+        try:
+            url_limpa_youtube = f"https://www.youtube.com/watch?v={video_id}"
+            url_oembed = f"https://www.youtube.com/oembed?url={url_limpa_youtube}&format=json"
+            resposta_oembed = http_session.get(url_oembed)
+
+            if resposta_oembed.status_code == 200:
+                titulo_video = resposta_oembed.json().get("title", "Vídeo do YouTube")
+            else:
+                print(f"oEmbed respondeu com status {resposta_oembed.status_code} para o ID {video_id}")
+
+        except Exception as e:
+            print(f"Erro ao buscar oEmbed: {e}")
+            pass
 
         # [ MEMBRO 3 - BLOCO 3 ]:
 
@@ -192,7 +242,7 @@ async def obter_legenda(request: Request, url: str):
         try:
             # Primeiro, vou tentar extrair as legendas manuais do vídeo. Se elas existirem, essa linha será suficiente para extraí-las:
             legenda_objeto = lista_de_legendas.find_manually_created_transcript(['en'])
-            print(f"Tipo de legenda: MANUAL")
+            print(f"Tipo de legenda: MANUAL | Título: {titulo_video}")
 
         except Exception:
 
@@ -200,7 +250,7 @@ async def obter_legenda(request: Request, url: str):
                 # Se falhar, isso significa que as legendas manuais não existem. Então, como segunda opção, tentarei extrair as legendas automáticas:
                 legenda_objeto = lista_de_legendas.find_generated_transcript(['en'])
                 tem_legenda_manual = False # Aviso ao sistema que essa legenda não é manual.
-                print(f"Tipo de legenda: AUTOMÁTICA - Erros de transcrição são possíveis nesse caso")
+                print(f"Tipo de legenda: AUTOMÁTICA - Erros de transcrição são possíveis nesse caso. | Título: {titulo_video}")
 
             except Exception:
                 # Se falhar novamente, isso significa que não há legendas em inglês disponíveis para esse vídeo específico:
@@ -232,7 +282,8 @@ async def obter_legenda(request: Request, url: str):
         # Agora, além de guardar as legendas_formatadas, vou guardar também a varíavel tem_legenda_manual:
         dados_para_salvar = {
             "legendas": legendas_formatadas,
-            "legenda_manual": tem_legenda_manual
+            "legenda_manual": tem_legenda_manual,
+            "titulo_video": titulo_video
         }
 
         salvar_na_cache(video_id, dados_para_salvar)
@@ -241,7 +292,8 @@ async def obter_legenda(request: Request, url: str):
         return JSONResponse(content={
             "dados": legendas_formatadas,
             "tokens_restantes": tokens_restantes,
-            "legenda_manual": tem_legenda_manual
+            "legenda_manual": tem_legenda_manual,
+            "titulo_video": titulo_video
         })
 
     except Exception as e:
@@ -254,7 +306,7 @@ async def obter_legenda(request: Request, url: str):
 
 # [ MEMBRO 3 - BLOCO 3 ]: ROTAS PARA MANUTENÇÃO DOS CARDS E DECKS
 
-# ROTA 1: Recebe os dados do bloco de legenda que o usuário desejou salvar através do clique no botão "Salvar Card", e salva ele no Banco de Dados. 
+# ROTA 1: Recebe os dados do bloco de legenda que o usuário desejou salvar através do clique no botão "Estudar depois", e salva ele no Banco de Dados. 
 
 @app.post("/salvar_card")
 # Aqui há a assinatura da função. Passamos todos os dados do bloco de legenda necessários para a criação do Card:
@@ -289,7 +341,7 @@ def salvar_card_bd(
         
         # Então, se acharmos um Card igual ao que o usuário tentou salvar:
         if card_existente:
-            print(f"Você já salvou um Card com essa frase: {texto_legenda}")
+            print(f"Você já salvou um Card com essa frase nesse Deck: {texto_legenda}")
             return JSONResponse(
                 status_code=200, 
                 content={"status": "duplicado", "mensagem": "Este card já foi salvo anteriormente."}
@@ -308,5 +360,5 @@ def salvar_card_bd(
         
         return JSONResponse(
             status_code=200, 
-            content={"status": "sucesso", "mensagem": "Card salvo com sucesso!"}
+            content={"status": "sucesso", "mensagem": "Card salvo com sucesso."}
         )
