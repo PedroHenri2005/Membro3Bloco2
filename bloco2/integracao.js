@@ -1,6 +1,7 @@
 // [MANTIDO]: Variáveis de estado para controlar as frases.
 let blocosDeEstudo = [];  // guarda o JSON com as frases 
 let blocoAtualIndex = 0;  // qual frase o usuário está no momento
+let currentVideoTitle = "Vídeo do Youtube"; // [ MEMBRO 3 - BLOCO 3 ]: guarda o título do vídeo do Youtube.
 
 // INICIAR SESSÃO
 async function iniciarSessao(youtubeLink) {
@@ -21,7 +22,7 @@ async function iniciarSessao(youtubeLink) {
             if (jsonResponse.tokens_restantes !== undefined) {
                 atualizarInterfaceTokens(jsonResponse.tokens_restantes);
             }
-            // NOVO (BLOCO 3):
+            // [ MEMBRO 3 - BLOCO 3]:
             // Na versão anterior do projeto, tinham essas linhas exatamente no lugar desse comentário: 
             // const erroData = await resposta.json(); 
             // throw new Error(erroData.detail || "Erro ao carregar legenda. Verifique se o vídeo possui legendas manuais em inglês.");
@@ -34,6 +35,8 @@ async function iniciarSessao(youtubeLink) {
         // Antes era a lista direta, agora encapsulamos os dados dentro de 'jsonResponse.dados' 
         // para trafegar os tokens_restantes na mesma requisição com mais segurança.
         blocosDeEstudo = jsonResponse.dados;
+        // [ MEMBRO 3 - BLOCO 3]: Agora, o título do Youtube é extraído:
+        currentVideoTitle = jsonResponse.titulo_video;
         
         atualizarInterfaceTokens(jsonResponse.tokens_restantes);
         
@@ -106,7 +109,7 @@ document.addEventListener('click', function(event) {
     if(event.target.id === 'botaoErro'){
         document.getElementById('erroModal').style.display = "none";
     }
-
+    // [ MEMBRO 3 - BLOCO 3 ]: Lógica de transferência de dados do vídeo através do botão "Estudar Depois":
     if (event.target.id === 'estudardepois') {
         // Se não houver frases carregadas, não é necessário fazer nada:
         if (!blocosDeEstudo || blocosDeEstudo.length === 0) return;
@@ -114,10 +117,10 @@ document.addEventListener('click', function(event) {
         // Precisamos então pegar os dados do bloco de legenda que está aparecendo na tela:
         const blocoAtual = blocosDeEstudo[blocoAtualIndex];
 
-        // Monta os dados simulando um formulário (Form(...)) que o FastAPI espera
+        // Simulando um formulário (Form(...)) que o FastAPI espera na rota POST do main.py:
         const dadosFormulario = new URLSearchParams();
         dadosFormulario.append('video_id', currentVideoId);
-        dadosFormulario.append('titulo_video', "Deck de Estudos"); 
+        dadosFormulario.append('titulo_video', currentVideoTitle); 
         dadosFormulario.append('texto_legenda', blocoAtual.texto_limpo);
         dadosFormulario.append('start_time', blocoAtual.tempo_inicio);
         dadosFormulario.append('end_time', blocoAtual.tempo_fim);
