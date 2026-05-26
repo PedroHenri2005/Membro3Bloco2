@@ -1,34 +1,64 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-theme="dark">
     <head>
-         <meta charset="UTF-8">
+        <meta charset="UTF-8">
+        <title>Shadowing - Beta</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        
+        <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <link rel="stylesheet" href="/static/css/style.css">
         
-        <script src="https://www.youtube.com/iframe_api" defer></script> 
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <script src="/static/js/blur.js" defer></script>
+        <script src="/static/js/darkmode.js" defer></script>
         <script src="/static/js/player.js" defer></script>
         <script src="/static/js/voice.js" defer></script>
         <script src="/static/js/integracao.js" defer></script>
-
-        <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.js" integrity="sha384-ezjq8118wdwdRMj+nX4bevEi+cDLTbhLAeFF688VK8tPDGeLUe0WoY2MZtSla72F" crossorigin="anonymous"></script>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>projeto</title>
+        <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.js" crossorigin="anonymous"></script>
     </head>
     <body>
-        <header>
-            <h1>Shadow</h1>
-            <div id="token-container">
-                <span id="token-label">Tokens</span>
-                <div id="token-count">
-                    5
-                </div>
+        <div class="thumbnails-bg">
+            <img src="/static/img/t1.jpg" class="thumb t1" alt="bg">
+            <img src="/static/img/t2.jpg" class="thumb t2" alt="bg">
+            <img src="/static/img/t3.jpg" class="thumb t3" alt="bg">
+            <img src="/static/img/t5.jpg" class="thumb t4" alt="bg">
+            <img src="/static/img/t4.jpg" class="thumb t5" alt="bg">
+            <img src="/static/img/t6.jpg" class="thumb t6" alt="bg">
+            <img src="/static/img/t7.jpg" class="thumb t7" alt="bg">
+            <img src="/static/img/t8.jpg" class="thumb t8" alt="bg">
+        </div>
+
+        <div class="waves-wrapper">
+            <svg viewBox="0 0 1000 200" preserveAspectRatio="none" class="wave-svg">
+                <path class="path path-1" d="M0,100 C200,0 300,200 500,100 C700,0 800,200 1000,100 C1200,0 1300,200 1500,100 C1700,0 1800,200 2000,100" />
+                <path class="path path-2" d="M0,120 C150,250 350,-50 500,120 C650,250 850,-50 1000,120 C1150,250 1350,-50 1500,120 C1650,250 1850,-50 2000,120" />
+                <path class="path path-3" d="M0,80 C250,30 250,130 500,80 C750,30 750,130 1000,80 C1250,30 1250,130 1500,80 C1750,30 1750,130 2000,80" />
+                <path class="path path-4" d="M0,110 C100,10 400,210 500,110 C600,10 900,210 1000,110 C1100,10 1400,210 1500,110 C1600,10 1900,210 2000,110" />
+            </svg>
+        </div>
+
+        <header class="navbar">
+            <div class="logo"><a href="/" style="color: inherit;">Shadowing</a></div>
+            <div class="nav-right">
+                <button class="nav-btn">🔗 <span class="btn-text-mobile">Token</span> <span id="token-count">5</span></button>
+                <button class="nav-btn" hx-get="/revisao" hx-target="main">↺ <span class="btn-text-mobile">Revisar</span></button>
+                <button class="nav-btn theme-toggle" id="mode">☀️</button>
             </div>
-            <button hx-get="/revisao" hx-target="main">pagina 3</button>
         </header>
 
-       <main hx-get="{{pagina}}"
+        <main class="content" 
+              hx-get="{{pagina}}"
               hx-target="main"
               hx-trigger="load">
         </main>
+
+        <div class="w3-modal w3-animate-opacity" id="erroModal">
+            <div class="w3-modal-content" id="erroDiv">
+                <p id="erro"></p>
+                <button id="botaoErro" hx-get="/" hx-target="main" hx-push-url="true">inicio</button>
+            </div>
+        </div>
 
         <script>
             document.body.addEventListener('htmx:afterSettle', function(evt) {
@@ -40,14 +70,11 @@
                         iniciarSessao(link);
                     }
                     
-                    // Reatribui o evento de clique ao botão de gravar que acabou de ser injetado
                     const micBtn = document.getElementById("gravar");
                     if(micBtn) micBtn.addEventListener("click", startRecording);
                 }
             });
-        </script>
-        <script>
-        // Uma nova função para sincronizar o contador do Token Bucket:
+
             function sincronizarContadorHome() {
                 const saldoSalvo = localStorage.getItem('tokens_restantes');
                 const el = document.getElementById('token-count');
@@ -60,11 +87,7 @@
                 }
             }
 
-        // Executa ao carregar a página
             sincronizarContadorHome();
-
-        // Ouvinte para o HTMX: toda vez que ele trocar o conteúdo, 
-        // garantimos que o contador continue certo
             document.body.addEventListener('htmx:afterSettle', sincronizarContadorHome);
         </script>
     </body>
