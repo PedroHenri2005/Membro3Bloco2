@@ -4,7 +4,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from youtube_transcript_api import YouTubeTranscriptApi 
-from requests import Session
+# [ MEMBRO 3 - BLOCO 3]: Apenas para não haver confusão de nomes, a próxima linha mudou levemente:
+from requests import Session as RequestsSession
 import re 
 # Alguns novos imports serão necessários para implementar o Token Bucket e a Cache:
 # Para a funcionalidade do Token Bucket, precisaremos de:
@@ -16,7 +17,7 @@ from limits import parse
 from cache import salvar_na_cache, carregar_da_cache  # [ MEMBRO 3 - BLOCO 3]: mudei o nome do antigo database.py para cache.py. Agora, existe um novo database.py, que tem uma função difernte.
 # Para configurar o banco de dados e a Engine, será necessário:
 from contextlib import asynccontextmanager
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine, select, Session
 from models import DeckVideo, Card
 
 # Configuração do Banco de Dados SQLite
@@ -58,7 +59,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory=["templates", "templates/Partials"])
 
 # para evitar bloqueios cookie do Youtube
-session = Session()
+session = RequestsSession()
 
 # ROTAS E NAVEGAÇÃO
 
