@@ -143,6 +143,18 @@ document.addEventListener('click', function(event) {
         });
     }
 
+    // [ MEMBRO 3 - BLOCO 3 ]: Lógica para o botão de "Revisão diária":
+    if (event.target.id === 'revisaodiaria') {
+        fetch('/api/revisao_diaria')
+        .then(resposta => resposta.json())
+        .then(dados => {
+            console.log("Busca de revisão executada com sucesso. Verifique o terminal.");
+        })
+        .catch(erro => {
+            console.error("Erro ao buscar cards do dia:", erro);
+        });
+    }
+
     // [MANTIDO]: Navegação entre frases.
     if (event.target.id === 'protecaoButton') {
         document.getElementById('protecaoPlayer').style.display = "none";
