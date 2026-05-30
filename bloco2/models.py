@@ -19,6 +19,14 @@ class Card(SQLModel, table=True):
     end_time: float
     data_criacao: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     data_proxima_revisao: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Adicionei também algumas outras propriedades que podem ser úteis no futuro:
     
+    # Histórico de acertos seguidos (essencial para resetar ou avançar o Card):
+    revisoes_consecutivas: int = Field(default=0)
+    # Intervalo atual do card em dias (começa em 0 para revisão no mesmo dia):
+    intervalo_dias: int = Field(default=0)
+    # Fator de facilidade:
+    fator_facilidade: float = Field(default=2.5)
+
     video_id: str = Field(foreign_key="deckvideo.video_id", index=True)
     deck_video: Optional[DeckVideo] = Relationship(back_populates="cards")
