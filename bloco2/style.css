@@ -245,14 +245,14 @@ img, iframe { width: 100%; height: auto; margin: auto; border-radius: 10px; }
 #botoes { margin-top: 2vh; display: flex; justify-content: center; gap: 10px; }
 
 /* Botões genéricos da página de treino */
-/* [ MEMBRO 3 - BLOCO 3]: Aqui, eu tirei #protecaoButton dos dois próximos blocos, pois quando tentei adicionar o mesmo estilo dos botões existentes #anterior e #proximo ao botão novo #estudardepois, estava dando conflito  */
-#anterior, #proximo, #estudardepois {
+/* [ MEMBRO 3 - BLOCO 3]: Aqui, eu tirei #protecaoButton dos dois próximos blocos, pois quando tentei adicionar o mesmo estilo dos botões existentes #anterior e #proximo aos botões novos #estudardepois e #revisaodiaria, estava dando conflito  */
+#anterior, #proximo, #estudardepois, #revisaodiaria {
     border-radius: 8px; font-size: large; padding: 10px 15px;
     cursor: pointer; border: 1px solid var(--border-color);
     background: var(--bg-button); color: var(--text-main);
     transition: background 0.3s ease;
 }
-#anterior:hover, #proximo:hover, #estudardepois:hover { background: var(--button-hover); }
+#anterior:hover, #proximo:hover, #estudardepois:hover, #revisaodiaria:hover { background: var(--button-hover); }
 
 /* Legenda e Microfone */
 #painelLateral { margin-top: 2vh; width: 100%; display: flex; flex-direction: column; align-items: center;}
@@ -412,7 +412,7 @@ main {
     margin-top: 15px; display: flex; justify-content: center; gap: 15px; 
 }
 
-/* [ MEMBRO 3 - BLOCO 3]: Para preservar o estilo do #protecaoButton enquanto adicionei estilo pro novo botão #estudardepois, eu apaguei #anterior e #proximo dos próximos 2 blocos:  */
+/* [ MEMBRO 3 - BLOCO 3]: Para preservar o estilo do #protecaoButton enquanto adicionei estilo pros novos botões #estudardepois e #revisaodiaria, eu apaguei #anterior e #proximo dos próximos 2 blocos:  */
 #protecaoButton {
     border-radius: 8px; font-size: 1rem; padding: 12px 20px;
     cursor: pointer; border: 1px solid var(--border-color);
