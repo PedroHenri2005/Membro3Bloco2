@@ -14,11 +14,14 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from limits import parse
 # Para a funcionalidade da Cache, precisaremos de:
-from cache import salvar_na_cache, carregar_da_cache  # [ MEMBRO 3 - BLOCO 3]: mudei o nome do antigo database.py para cache.py. Agora, existe um novo database.py, que tem uma função difernte.
+# [ MEMBRO 3 - BLOCO 3]: Mudei o nome do antigo database.py para cache.py:
+from cache import salvar_na_cache, carregar_da_cache  
 # Para configurar o banco de dados e a Engine, será necessário:
 from contextlib import asynccontextmanager
 from sqlmodel import SQLModel, create_engine, select, Session
 from models import DeckVideo, Card
+# Para a manutenção das datas de revisão dos Cards, será necessário:
+from datetime import datetime, timezone
 
 # Configuração do Banco de Dados SQLite
 arquivo_sqlite = "estudos.db"
@@ -121,7 +124,8 @@ def limpar_url_extrair_id(url: str):
     else:
         return None
 
-# GET para pegar as legendas, adaptado para a Cache e o Token Bucket:
+# GET para pegar as legendas, adaptado para a Cache e o Token Bucket.
+# [ MEMBRO 3 - BLOCO 3 ] E agora também adaptado para legendas automáticas e para extrair o título dos vídeos (apenas para ficar mais informativo para o usuário):
 
 @app.get("/api/legenda")
 async def obter_legenda(request: Request, url: str):
@@ -362,3 +366,34 @@ def salvar_card_bd(
             status_code=200, 
             content={"status": "sucesso", "mensagem": "Card salvo com sucesso."}
         )
+
+# ROTA 2: Fornece para o usuário todos os Cards que ele precisa revisar no dia que ele clicar no botão "Revisão do dia".
+
+@app.get("/api/revisao_diaria")
+def listar_cards_hoje():
+    # Tudo começa obtendo o momento de agora:
+    agora = datetime.now(timezone.utc)
+    
+    with Session(engine) as session:
+        # E então, vamos usar uma query para selecionar todos os Cards cujo momento de revisão é agora, ou se o momento de revisão já passou:
+        query = select(Card).where(Card.data_proxima_revisao <= agora)
+        cards_hoje = session.exec(query).all()
+        
+        # Se a lista estiver vazia, isso significa que não há Cards para o usuário revisar hoje:
+        if not cards_hoje:
+            print("Nenhum card para revisar hoje.\n")
+            return JSONResponse(content={"status": "sucesso", "mensagem": "Nenhum card para revisar hoje.", "Quantidade": 0})
+        
+        # Se houver Cards para revisar:
+        print("\n=== Cards para revisar hoje ===")
+        for card in cards_hoje:
+            # Podemos extrair o título do vídeo do Deck daqueles Cards:
+            titulo_video = card.deck_video.titulo if card.deck_video else "Vídeo Desconhecido"
+            
+            print(f"Deck do Card: {titulo_video}")
+            print(f"Card: {card.texto_legenda}")
+            print("-" * 30)
+        print("===============================\n")
+        
+        # Retorna a resposta para o JavaScript saber que deu tudo certo
+        return JSONResponse(content={"status": "sucesso", "quantidade": len(cards_hoje)})
