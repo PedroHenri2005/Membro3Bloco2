@@ -1,4 +1,4 @@
-# [ MEMBRO 3 - BLOCO 3 ]: OBSERVAÇÃO 
+# [ MEMBRO 3 - BLOCO 3 ]: OBSERVAÇÃO
 # Esse arquivo cache.py é essencialmente o mesmo arquivo database.py antigo, melhorado com algumas modificações descritas a seguir:
 # Achei mais organizado manter esse novo cache.py ao invés do antigo database.py. Por isso, não há mais database.py.
 # A única coisa que vai mudar para arquivos fora este, é que no main.py agora importamos as funções deste arquivo usando o nome cache ao invés de database.
