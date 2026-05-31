@@ -1,0 +1,51 @@
+<!-- [ MEMBRO 3 - BLOCO 3 ]: Novo modal para o usuário ser informado sobre salvamento de Cards e Decks.
+     Esse modal será reaproveitado a fim de avisar o usuário sobre o tipo de legenda e o título do vídeo também.  -->
+<div id="modalSucessoCard" class="modal-sucesso-card">
+    <div class="modal-sucesso-content">
+        <p id="textologs"></p>
+        <button id="botaoContinuarCard">continuar</button>
+    </div>
+</div>
+
+<div id="painelPrincipal">
+    <div id="protecaoPlayer">
+        <button id="protecaoButton">Iniciar Estudos</button>
+    </div>
+    <div id="player"></div> 
+    <div id="botoes">
+        <button id="anterior">Frase anterior</button>
+        <!-- [ MEMBRO 3 - BLOCO 3 ]: As próximas 4 linhas são os botões novos que adicionei nesse bloco:  -->
+        <button id="estudardepois">Estudar depois</button>
+        <button id="deletarcard" style="display: none;">Deletar Card</button>
+        <button id="deletardeck" style="display: none;">Deletar Deck</button>
+        <button id="revisaodiaria">Revisão diária</button>
+        <button id="proximo">Próxima frase</button>
+    </div>
+</div>
+
+<div id="painelLateral">
+    <div id="legendaPai">
+        <button id="ocultar">
+            <img id="olho" src="/static/img/olho.svg" alt="Ocultar">
+        </button>
+        <div id="legenda">
+            Legendas
+        </div>
+    </div>
+    
+    <div id="panel">
+        <canvas id="wave" width="700" height="120"></canvas>
+        
+        <div class="mic-area">
+            <div id="transcript">Fale algo...</div>
+            <button id="gravar">
+                <img src="/static/img/mic.svg" alt="Gravar">
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="carregamento">
+    <p>Extraindo legendas do vídeo... Isso pode levar alguns segundos.</p>
+    <p><i class="fa fa-spinner w3-spin" style="font-size:64px"></i></p>
+</div>
